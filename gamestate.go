@@ -83,26 +83,28 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 
 	// Check if any bounds are exceeded by head
 	if h.X < 0 || h.X > 20 || h.Y < 0 || h.Y > 20 {
-		// Snake is DEAD  XXX TODO XXX
+		// Snake is DEAD
 		isDead = true
 	}
 
 	// Check if head is touching anything other than food
 	for _, v := range gs.snakes {
 		if IsPosInSlice(h, v) {
-			// Sname is DEAD XXX TODO XXX
+			// Sname is DEAD
 			isDead = true
 			break
 		}
 	}
 
 	if !gs.IsPosFood(h) {
-		// Remove the last element (moving, not growing)
-		s = s[1:]
+		// Remove the LAST element (moving, not growing)
+		s = s[:len(s)-1]
 	}
 
 	if !isDead {
 		gs.snakes[msg.Id] = s
+	} else {
+		log.Println("Oh no! Snake is dead 8X")
 	}
 	gs.mutex.Unlock()
 }

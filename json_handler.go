@@ -48,6 +48,8 @@ func (h *jsonHandler) Accept(ws *websocket.Conn) {
 			return
 		}
 
+		log.Println(msg)
+
 		switch msg.Type {
 		case "addsnake":
 			id := h.gameState.AddSnake(msg)
