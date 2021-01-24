@@ -33,15 +33,15 @@ type JSONSnakeData struct {
 }
 type GameState struct {
 	mutex sync.RWMutex
-	snakes map[string]Snake
-	food []Pos
+	Snakes map[string]Snake 	`json:"snakes"`
+	Food []Pos					`json:"food"`
 }
 
 func NewGameState() *GameState {
 	log.Println("Building new GameState")
 	return &GameState{
-		snakes: make(map[string]Snake),
-		food: []Pos{NewRandomPos(false)},
+		Snakes: make(map[string]Snake),
+		Food: []Pos{NewRandomPos(false)},
 	}
 }
 func (gs *GameState) NewSnake() Snake {
@@ -82,8 +82,8 @@ type JSONGameStateMsg struct {
 
 func (gs *GameState) AddSnake(msg ClientMessage) string {
 	gs.mutex.Lock()
-	id := strconv.Itoa(len(gs.snakes)+1)
-	gs.snakes[id] = gs.NewSnake()
+	id := strconv.Itoa(len(gs.Snakes)+1)
+	gs.Snakes[id] = gs.NewSnake()
 	gs.mutex.Unlock()
 	return id
 }
@@ -109,7 +109,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 
 	if !isDead {
 		// Check if head is touching anything other than food
-		for _, v := range gs.snakes {
+		for _, v := range gs.Snakes {
 			if IsPosInSlice(h, v.Body) {
 				// Sname is DEAD
 				isDead = true
@@ -130,7 +130,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 		s.State = Dead
 	}
 
-	gs.snakes[msg.Id] = s
+	gs.Snakes[msg.Id] = s
 	gs.mutex.Unlock()
 }
 
@@ -141,7 +141,7 @@ func (gs *GameState) IsPosOccupied(p Pos) bool {
 		return true
 	}
 
-	for _, v := range gs.snakes {
+	for _, v := range gs.Snakes {
 		if IsPosInSlice(p, v.Body) {
 			return true
 		}
@@ -149,7 +149,7 @@ func (gs *GameState) IsPosOccupied(p Pos) bool {
 	return false
 }
 func (gs *GameState) IsPosFood(p Pos) bool {
-	return IsPosInSlice(p, gs.food)
+	return IsPosInSlice(p, gs.Food)
 }
 
 func IsPosInSlice(p Pos, s []Pos) bool {
@@ -166,13 +166,13 @@ func IsEqualPos(p1 Pos, p2 Pos) bool {
 
 // This function needs fixing. It's not marshalling the payload properly.
 func (gs *GameState) GetGameStateJSON() (string, error) {
-	msg, err := json.Marshal(&JSONGameStateMsg{Type: "gamestate", Payload: gs.snakes})
+	msg, err := json.Marshal(&JSONGameStateMsg{Type: "gamestate", Payload: gs})
 	if err != nil {
 		log.Println("gamestate json marshal err:", err)
 	}
 
 	fmt.Printf("GetGameStateJSON: %+v\n", string(msg))
-	fmt.Printf("GetGameStateJSON: %+v\n", gs.snakes)
+	fmt.Printf("GetGameStateJSON: %+v\n", gs)
 
 	return string(msg), err
 }
