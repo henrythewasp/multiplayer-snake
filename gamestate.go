@@ -14,8 +14,19 @@ type Pos struct {
 	Y int	`json:"y"`
 }
 
-type Snake []Pos
+type SnakeState int
 
+const (
+	Pending SnakeState = iota
+	Alive
+	Dead
+)
+type Snake struct {
+	Body []Pos 			`json:"body"`
+	State SnakeState 	`json:"state"`
+}
+
+// Is ths struct required? XXX
 type JSONSnakeData struct {
 	Id string	`json:"id"`
 	S Snake		`json:"s"`
@@ -35,9 +46,12 @@ func NewGameState() *GameState {
 }
 func (gs *GameState) NewSnake() Snake {
 	log.Println("Building new Snake")
-	s := make([]Pos, 0, 10)
-	s = append(s, gs.NewRandomFreePos(true))
-	return s
+	b := make([]Pos, 0, 10)
+	b = append(b, gs.NewRandomFreePos(true))
+	return Snake{
+		Body: b,
+		State: Pending,
+	}
 }
 // will also need to check that this is a feee point on the grid and isn't
 // already taken up by a snake or food.
@@ -74,38 +88,49 @@ func (gs *GameState) AddSnake(msg ClientMessage) string {
 	return id
 }
 func (gs *GameState) UpdateSnake(msg ClientMessage) {
-	isDead := false
-
 	s := msg.S
-	h := s[0]
+	h := s.Body[0]
+
+	isDead := (s.State == Dead)
+	if isDead {
+		log.Println("ERROR! Snake is already dead 8X")
+		return
+	}
 
 	gs.mutex.Lock()
 
-	// Check if any bounds are exceeded by head
-	if h.X < 0 || h.X > 20 || h.Y < 0 || h.Y > 20 {
-		// Snake is DEAD
-		isDead = true
-	}
-
-	// Check if head is touching anything other than food
-	for _, v := range gs.snakes {
-		if IsPosInSlice(h, v) {
-			// Sname is DEAD
+	if !isDead {
+		// Check if any bounds are exceeded by head
+		if h.X < 0 || h.X > 20 || h.Y < 0 || h.Y > 20 {
+			// Snake is DEAD
 			isDead = true
-			break
 		}
 	}
 
-	if !gs.IsPosFood(h) {
-		// Remove the LAST element (moving, not growing)
-		s = s[:len(s)-1]
+	if !isDead {
+		// Check if head is touching anything other than food
+		for _, v := range gs.snakes {
+			if IsPosInSlice(h, v.Body) {
+				// Sname is DEAD
+				isDead = true
+				break
+			}
+		}
 	}
 
 	if !isDead {
-		gs.snakes[msg.Id] = s
+		if !gs.IsPosFood(h) {
+			// Remove the LAST element (moving, not growing)
+			// s = s[:len(s)-1]  XXX
+		}
+
 	} else {
-		log.Println("Oh no! Snake is dead 8X")
+		// Update state for snake on gamestate so client knows that it's dead
+		log.Println("Oh no! Snake is now dead 8X")
+		s.State = Dead
 	}
+
+	gs.snakes[msg.Id] = s
 	gs.mutex.Unlock()
 }
 
@@ -117,7 +142,7 @@ func (gs *GameState) IsPosOccupied(p Pos) bool {
 	}
 
 	for _, v := range gs.snakes {
-		if IsPosInSlice(p, v) {
+		if IsPosInSlice(p, v.Body) {
 			return true
 		}
 	}
