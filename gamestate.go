@@ -48,7 +48,9 @@ func NewGameState() *GameState {
 func (gs *GameState) NewSnake() Snake {
 	log.Println("Building new Snake")
 	b := make([]Pos, 0, 10)
-	b = append(b, gs.NewRandomFreePos(true))
+	p := gs.NewRandomFreePos(true)
+	b = append(b, p)
+	b = append(b, Pos{p.X, p.Y+1})
 	return Snake{
 		Body: b,
 		State: Pending,
@@ -60,7 +62,8 @@ func (gs *GameState) NewRandomFreePos(awayFromEdge bool) Pos {
 	var p Pos
 	for {
 		p = NewRandomPos(awayFromEdge)
-		if !gs.IsPosOccupied(p) {
+		if 	!gs.IsPosOccupied(p) &&
+			!gs.IsPosOccupied(Pos{p.X, p.Y+1}) {
 			break
 		}
 		log.Println("Pos is occupied. Try another.")
@@ -111,9 +114,14 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 
 	if !isDead {
 		// Check if head is touching anything other than food
-		for _, v := range gs.Snakes {
-			if IsPosInSlice(h, v.Body) {
-				// Sname is DEAD
+		for i, v := range gs.Snakes {
+			parts := v.Body
+			if (msg.Id == i) {
+				// Same snake. Exclude the head when checking.
+				parts = parts[1:]
+			}
+			if IsPosInSlice(h, parts) {
+				// Snake is DEAD.
 				isDead = true
 				fmt.Printf("(1) Snake is now dead: %+v\n", h)
 				fmt.Printf("(1) gs %+v\n", gs)
@@ -125,7 +133,15 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 	if !isDead {
 		if !gs.IsPosFood(h) {
 			// Remove the LAST element (moving, not growing)
-			// s = s[:len(s)-1]  XXX
+			s.Body = s.Body[:len(s.Body)-1]
+		} else {
+			// Remove the food and place a new one
+			// XXX this only works for single food currently
+			// XXX need to work out way of doing check-and-delete food
+			// XXX in the IsPosFood() func, somehow, so we don't have to
+			// XXX iterate through the food array twice.
+			gs.Food = nil
+			gs.Food = append(gs.Food, NewRandomPos(false))
 		}
 
 	} else {
