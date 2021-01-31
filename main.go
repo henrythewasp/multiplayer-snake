@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -25,14 +26,54 @@ func main() {
 	flag.IntVar(&options.port, "port", 3000, "port to listen on")
 	flag.Parse()
 
-	gs := NewGameState()
+	// Create ticker channel
+	ticker := time.NewTicker(100 * time.Millisecond)
+	update := make(chan ClientMessage)
 
-	wsJSONHandler := NewJSONHandler(gs)
+
+	wsJSONHandler := NewJSONHandler(update)
 	wsJSONServer := websocket.Server{Handler: wsJSONHandler.Accept}
 	http.Handle("/json", wsJSONServer)
 
 	listenAt := fmt.Sprintf("%s:%d", options.address, options.port)
 	log.Printf("Starting to listen on: %s\n", listenAt)
+
+
+	// Create gameloop goroutine
+	go func(h *jsonHandler) {
+		gs := NewGameState()
+
+		for {
+			select {
+			case msg := <-update:
+				// Apply the update
+				switch msg.Type {
+				case "addsnake":
+					log.Println("addSnake MSG")
+					id := gs.AddSnake(msg)
+					// Need to send this ID back to caller
+					log.Println("New snake: ", id)
+					if err := h.echo(msg.ws, id); err != nil {
+						log.Println("echo err:", err)
+					}
+				case "updatesnake":
+					log.Println("updateSnake MSG")
+					gs.UpdateSnake(msg)
+				default:
+					log.Println("unknown msg.Type")
+				}
+			case t := <-ticker.C:
+				// Send out gamestate to all clients
+				fmt.Println("Tick at", t)
+				if data, err := gs.GetGameStateJSON(); err != nil {
+					log.Println("GetGameStateJSON err:", err)
+				} else if err = h.broadcast(data); err != nil {
+					log.Println("broadcast err:", err)
+				}
+			}
+		}
+	}(wsJSONHandler)
+
 
 	if err := http.ListenAndServe(listenAt, nil); err != nil {
 		log.Fatalf("Could not start web server: %v\n", err)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"strconv"
 	"sync"
 )
@@ -103,6 +104,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 		// Check if any bounds are exceeded by head
 		if h.X < 0 || h.X > 20 || h.Y < 0 || h.Y > 20 {
 			// Snake is DEAD
+			fmt.Printf("(0) Snake is now dead: %+v\n", h)
 			isDead = true
 		}
 	}
@@ -113,6 +115,8 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 			if IsPosInSlice(h, v.Body) {
 				// Sname is DEAD
 				isDead = true
+				fmt.Printf("(1) Snake is now dead: %+v\n", h)
+				fmt.Printf("(1) gs %+v\n", gs)
 				break
 			}
 		}
@@ -132,6 +136,10 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 
 	gs.Snakes[msg.Id] = s
 	gs.mutex.Unlock()
+
+	if (isDead) {
+		os.Exit(1)
+	}
 }
 
 // Need func to test if pos is food, if pos is occupied by another snake

@@ -12,7 +12,8 @@ import (
 type jsonHandler struct {
 	mutex sync.RWMutex
 	conns map[*websocket.Conn]struct{}
-	gameState *GameState
+	update chan ClientMessage
+	// gameState *GameState
 }
 
 type JSONWsMsg struct {
@@ -20,14 +21,16 @@ type JSONWsMsg struct {
 	Payload interface{} `json:"payload"`
 }
 
+/*
 type JSONBroadcastResult struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
 }
+*/
 
-func NewJSONHandler(gs *GameState) *jsonHandler {
+func NewJSONHandler(update chan ClientMessage) *jsonHandler {
 	return &jsonHandler{
-		gameState: gs,
+		update: update,
 		conns: make(map[*websocket.Conn]struct{}),
 	}
 }
@@ -48,8 +51,13 @@ func (h *jsonHandler) Accept(ws *websocket.Conn) {
 			return
 		}
 
+		msg.ws = ws   // Save websocket for this msg in case we need to reply
+
 		log.Println(msg)
 
+		h.update <- msg
+
+		/*
 		switch msg.Type {
 		case "addsnake":
 			id := h.gameState.AddSnake(msg)
@@ -72,6 +80,7 @@ func (h *jsonHandler) Accept(ws *websocket.Conn) {
 			log.Println("unknown msg.Type")
 			return
 		}
+		*/
 	}
 }
 
@@ -79,8 +88,8 @@ func (h *jsonHandler) echo(ws *websocket.Conn, payload interface{}) error {
 	return websocket.JSON.Send(ws, &JSONWsMsg{Type: "echo", Payload: payload})
 }
 
-func (h *jsonHandler) broadcast(ws *websocket.Conn, payload interface{}) error {
-	result := JSONBroadcastResult{Type: "broadcastResult", Payload: payload}
+func (h *jsonHandler) broadcast(payload interface{}) error {
+	// result := JSONBroadcastResult{Type: "broadcastResult", Payload: payload}
 
 	msg, err := json.Marshal(&JSONWsMsg{Type: "broadcast", Payload: payload})
 	if err != nil {
@@ -98,7 +107,8 @@ func (h *jsonHandler) broadcast(ws *websocket.Conn, payload interface{}) error {
 		h.mutex.RUnlock()
 	}
 
-	return websocket.JSON.Send(ws, &result)
+	return err
+	// return websocket.JSON.Send(ws, &result)
 }
 
 func (h *jsonHandler) cleanup(ws *websocket.Conn) {
