@@ -46,29 +46,39 @@ func main() {
 		for {
 			select {
 			case msg := <-update:
-				// Apply the update
+				// Handle client message
 				switch msg.Type {
+				case "startgame":
+					log.Println("Starting the game! >>>>>>>>>>>>>>>>>>> ")
+					gs.StartGame()
+
 				case "addsnake":
 					log.Println("addSnake MSG")
 					id := gs.AddSnake(msg)
-					// Need to send this ID back to caller
+					// Send this ID back to caller
 					log.Println("New snake: ", id)
 					if err := h.echo(msg.ws, id); err != nil {
 						log.Println("echo err:", err)
 					}
+
 				case "updatesnake":
-					log.Println("updateSnake MSG")
-					gs.UpdateSnake(msg)
+					if gs.IsRunning {
+						log.Println("updateSnake MSG")
+						gs.UpdateSnake(msg)
+					}
+
 				default:
 					log.Println("unknown msg.Type")
 				}
 			case t := <-ticker.C:
-				// Send out gamestate to all clients
-				fmt.Println("Tick at", t)
-				if data, err := gs.GetGameStateJSON(); err != nil {
-					log.Println("GetGameStateJSON err:", err)
-				} else if err = h.broadcast(data); err != nil {
-					log.Println("broadcast err:", err)
+				if gs.IsRunning {
+					// Send out gamestate to all clients
+					fmt.Println("Tick at", t)
+					if data, err := gs.GetGameStateJSON(); err != nil {
+						log.Println("GetGameStateJSON err:", err)
+					} else if err = h.broadcast(data); err != nil {
+						log.Println("broadcast err:", err)
+					}
 				}
 			}
 		}

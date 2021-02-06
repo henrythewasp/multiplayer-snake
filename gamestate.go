@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type Pos struct {
@@ -34,16 +35,36 @@ type JSONSnakeData struct {
 }
 type GameState struct {
 	mutex sync.RWMutex
+	IsRunning bool
 	Snakes map[string]Snake 	`json:"snakes"`
 	Food []Pos					`json:"food"`
 }
 
 func NewGameState() *GameState {
 	log.Println("Building new GameState")
+
+	// Seed the rand package
+	tn := time.Now().UnixNano()
+	log.Println("UnixName: ", tn)
+
+	rand.Seed(tn)
+
 	return &GameState{
+		IsRunning: false,
 		Snakes: make(map[string]Snake),
-		Food: []Pos{NewRandomPos(false)},
 	}
+}
+func (gs *GameState) StartGame() {
+	log.Println("Starting Game")
+
+	// Add 1 random food for each snake
+	gs.Food = make([]Pos, 0, len(gs.Snakes))
+	for range gs.Snakes {
+		gs.Food = append(gs.Food, gs.NewRandomFreePos(false))
+	}
+
+	// Start the game
+	gs.IsRunning = true
 }
 func (gs *GameState) NewSnake() Snake {
 	log.Println("Building new Snake")
@@ -141,7 +162,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 			// XXX in the IsPosFood() func, somehow, so we don't have to
 			// XXX iterate through the food array twice.
 			gs.Food = nil
-			gs.Food = append(gs.Food, NewRandomPos(false))
+			gs.Food = append(gs.Food, gs.NewRandomFreePos(false))
 		}
 
 	} else {
