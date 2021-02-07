@@ -157,11 +157,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 			s.Body = s.Body[:len(s.Body)-1]
 		} else {
 			// Remove the food and place a new one
-			// XXX this only works for single food currently
-			// XXX need to work out way of doing check-and-delete food
-			// XXX in the IsPosFood() func, somehow, so we don't have to
-			// XXX iterate through the food array twice.
-			gs.Food = nil
+			gs.Food = RemovePosFromSlice(h, gs.Food)
 			gs.Food = append(gs.Food, gs.NewRandomFreePos(false))
 		}
 
@@ -209,6 +205,16 @@ func (gs *GameState) IsPosFood(p Pos) bool {
 	return IsPosInSlice(p, gs.Food)
 }
 
+// https://stackoverflow.com/questions/37334119/how-to-delete-an-element-from-a-slice-in-golang
+func RemovePosFromSlice(p Pos, s []Pos) []Pos {
+	for i, pv := range s {
+		if IsEqualPos(p, pv) {
+			s[len(s)-1], s[i] = s[i], s[len(s)-1]
+			return s[:len(s)-1]
+		}
+	}
+	return s
+}
 func IsPosInSlice(p Pos, s []Pos) bool {
 	for _, pv := range s {
 		if IsEqualPos(p, pv) {
