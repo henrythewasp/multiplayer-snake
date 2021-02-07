@@ -35,7 +35,7 @@ type JSONSnakeData struct {
 }
 type GameState struct {
 	mutex sync.RWMutex
-	IsRunning bool
+	IsRunning bool 				`json:"isrunning"`
 	Snakes map[string]Snake 	`json:"snakes"`
 	Food []Pos					`json:"food"`
 }
@@ -175,7 +175,19 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 	gs.mutex.Unlock()
 
 	if (isDead) {
-		os.Exit(1)
+		stopGame := true
+		// If there are no snakes left alive, stop the game.
+		for _, v := range gs.Snakes {
+			if v.State != Dead {
+				stopGame = false
+				break
+			}
+		}
+
+		if stopGame {
+			// XXX TODO need to stop game rather than just exit
+			os.Exit(1)
+		}
 	}
 }
 

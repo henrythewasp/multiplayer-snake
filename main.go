@@ -49,19 +49,35 @@ func main() {
 				// Handle client message
 				switch msg.Type {
 				case "startgame":
-					log.Println("Starting the game! >>>>>>>>>>>>>>>>>>> ")
-					gs.StartGame()
+					// Game must not already be running.
+					if !gs.IsRunning {
+						log.Println("Starting the game! >>>>>>>>>>>>>>>>>>> ")
+						gs.StartGame()
+					}
 
 				case "addsnake":
-					log.Println("addSnake MSG")
-					id := gs.AddSnake(msg)
-					// Send this ID back to caller
-					log.Println("New snake: ", id)
-					if err := h.echo(msg.ws, id); err != nil {
-						log.Println("echo err:", err)
+					// Game must not already be running.
+					if !gs.IsRunning {
+						log.Println("addSnake MSG")
+						id := gs.AddSnake(msg)
+
+						// Send this ID back to caller
+						log.Println("New snake: ", id)
+						if err := h.echo(msg.ws, id); err != nil {
+							log.Println("echo err:", err)
+						}
+
+						// Send out new gamestate to all users
+						log.Println("Updating state to all clients")
+						if data, err := gs.GetGameStateJSON(); err != nil {
+							log.Println("GetGameStateJSON err:", err)
+						} else if err = h.broadcast(data); err != nil {
+							log.Println("broadcast err:", err)
+						}
 					}
 
 				case "updatesnake":
+					// Game must be running.
 					if gs.IsRunning {
 						log.Println("updateSnake MSG")
 						gs.UpdateSnake(msg)

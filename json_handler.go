@@ -21,13 +21,6 @@ type JSONWsMsg struct {
 	Payload interface{} `json:"payload"`
 }
 
-/*
-type JSONBroadcastResult struct {
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
-}
-*/
-
 func NewJSONHandler(update chan ClientMessage) *jsonHandler {
 	return &jsonHandler{
 		update: update,
@@ -56,31 +49,6 @@ func (h *jsonHandler) Accept(ws *websocket.Conn) {
 		log.Println(msg)
 
 		h.update <- msg
-
-		/*
-		switch msg.Type {
-		case "addsnake":
-			id := h.gameState.AddSnake(msg)
-			if err := h.echo(ws, id); err != nil {
-				log.Println("echo err:", err)
-			}
-			if data, err := h.gameState.GetGameStateJSON(); err != nil {
-				log.Println("GetGameStateJSON err:", err)
-			} else if err = h.broadcast(ws, data); err != nil {
-				log.Println("broadcast err:", err)
-			}
-		case "updatesnake":
-			h.gameState.UpdateSnake(msg)
-			if data, err := h.gameState.GetGameStateJSON(); err != nil {
-				log.Println("GetGameStateJSON err:", err)
-			} else if err = h.broadcast(ws, data); err != nil {
-				log.Println("broadcast err:", err)
-			}
-		default:
-			log.Println("unknown msg.Type")
-			return
-		}
-		*/
 	}
 }
 
