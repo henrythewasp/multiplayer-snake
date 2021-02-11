@@ -96,7 +96,7 @@ func NewRandomPos(awayFromEdge bool) Pos {
 		// Return a position that is not too near the edge
 		return Pos{rand.Intn(12)+4, rand.Intn(12)+4}
 	} else {
-		return Pos{rand.Intn(20), rand.Intn(20)}
+		return Pos{rand.Intn(40), rand.Intn(40)}
 	}
 }
 
@@ -126,7 +126,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 
 	if !isDead {
 		// Check if any bounds are exceeded by head
-		if h.X < 0 || h.X > 20 || h.Y < 0 || h.Y > 20 {
+		if h.X < 0 || h.X > 40 || h.Y < 0 || h.Y > 40 {
 			// Snake is DEAD
 			fmt.Printf("(0) Snake is now dead: %+v\n", h)
 			isDead = true

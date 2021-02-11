@@ -30,13 +30,12 @@ func main() {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	update := make(chan ClientMessage)
 
+	// HTTP Request Handler
 
+	// WebSockets JSON Handler
 	wsJSONHandler := NewJSONHandler(update)
 	wsJSONServer := websocket.Server{Handler: wsJSONHandler.Accept}
 	http.Handle("/json", wsJSONServer)
-
-	listenAt := fmt.Sprintf("%s:%d", options.address, options.port)
-	log.Printf("Starting to listen on: %s\n", listenAt)
 
 
 	// Create gameloop goroutine
@@ -100,6 +99,9 @@ func main() {
 		}
 	}(wsJSONHandler)
 
+
+	listenAt := fmt.Sprintf("%s:%d", options.address, options.port)
+	log.Printf("Starting to listen on: %s\n", listenAt)
 
 	if err := http.ListenAndServe(listenAt, nil); err != nil {
 		log.Fatalf("Could not start web server: %v\n", err)
