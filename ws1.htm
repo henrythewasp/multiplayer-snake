@@ -1,0 +1,278 @@
+<!doctype html>
+<html>
+    <head>
+        <script>
+            var ws_socket = new WebSocket("ws://localhost:3000/json");
+            // Get ID from URL param
+            var url_string = window.location.href;
+            var url = new URL(url_string);
+            var bot = url.searchParams.get("bot");
+            console.log("Bot is (" + bot +")");
+
+            var isBot = (bot != null);
+            console.log("isBot is (" + isBot +")");
+
+
+            var BLOCK_SIZE = 10;
+            var dir = 0;
+
+            if (!isBot) {
+                document.addEventListener("DOMContentLoaded", function(event) {
+                    var button = document.getElementById("start");
+                    button.addEventListener('click', function(e) {
+                        console.table(e);
+                        startgame();
+                        e.target.innerHTML = "Restart";
+                    });
+                });
+            }
+
+            var Keyboarder = function() {
+                var keyState = {};
+
+                window.addEventListener('keydown', function(e) {
+                    keyState[e.keyCode] = true;
+
+                    // Keyboard direction control but not allowed to reverse into yourself
+                    if ((e.keyCode == kb.KEYS.LEFT) && dir != kb.DIR.RIGHT) {
+                        // West
+                        dir = kb.DIR.LEFT;
+                    } else if ((e.keyCode == kb.KEYS.RIGHT) && dir != kb.DIR.LEFT) {
+                        // East
+                        dir = kb.DIR.RIGHT;
+                    } else if ((e.keyCode == kb.KEYS.UP) && dir != kb.DIR.DOWN) {
+                        // North
+                        dir = kb.DIR.UP;
+                    } else if ((e.keyCode == kb.KEYS.DOWN) && dir != kb.DIR.UP) {
+                        // South
+                        dir = kb.DIR.DOWN;
+                    }
+                });
+
+                window.addEventListener('keyup', function(e) {
+                    keyState[e.keyCode] = false;
+                });
+
+                this.isDown = function(keyCode) {
+                    return keyState[keyCode] === true;
+                };
+
+                this.KEYS = { LEFT: 37, RIGHT: 39, UP: 38, DOWN: 40 };
+                this.DIR = { UP: 0, RIGHT: 1, DOWN: 2, LEFT: 3 };
+            };
+
+            var kb = new Keyboarder();
+
+            ws_socket.onopen = function(event) {
+                addsnake();
+            };
+            ws_socket.onmessage = function(event) {
+                // console.log(event.data);
+                v = JSON.parse(event.data);
+                if (v.type == "echo") {
+                    id = v.payload;
+                    console.log("My Snake ID is: " + id);
+
+                } else if (v.type == "broadcast") {
+                    p = JSON.parse(v.payload);
+                    // console.table(p.payload);
+
+                    console.log("Received broadcast payload from server")
+                    drawGame(p.payload);
+
+                    if (p.payload.isrunning) {
+                        s = p.payload.snakes[id];
+                        // console.table(s);
+
+                        // Access snake
+                        b = s.body;
+                        h = b[0];
+                        d = s.state;
+                        if (d == 2) {
+                            console.log("This snake is DEAD!")
+                            return;
+                        }
+
+                        nh = { x: h.x, y: h.y };
+
+                        if (isBot) {
+                            // Work out how to get to nearest food
+                            dir = getBotMove(h, dir, p.payload.food);
+                        }
+
+                        // Allow wrap when you go over the edge
+                        if (dir == kb.DIR.UP) {
+                            // North
+                            nh.y = ((nh.y-1) +40) % 40;
+
+                        } else if (dir == kb.DIR.RIGHT) {
+                            // East
+                            nh.x = ((nh.x+1) +40) % 40;
+
+                        } else if (dir == kb.DIR.DOWN) {
+                            // South
+                            nh.y = ((nh.y+1) +40) % 40;
+
+                        } else {
+                            // West
+                            nh.x = ((nh.x-1) +40) % 40;
+                        }
+
+                        b.unshift(nh);
+                        // console.table(b);
+                        s.body = b;
+
+                        update(id, s);
+                    }
+                }
+            };
+
+            function getBotMove(head, dir, food) {
+                var newDir = dir;
+
+                // Find nearest food
+                var nf = { x: 100, y: 100 };
+                var nfDist = Math.abs(head.x - nf.x) + Math.abs(head.y - nf.y);
+
+                food.forEach(function(block) {
+                    var tDist = Math.abs(head.x - block.x) + Math.abs(head.y - block.y);
+                    if (tDist < nfDist) {
+                        nfDist = tDist;
+                        nf = block;
+                    }
+                });
+
+                console.log("Nearest food is at " + nf.x + "," + nf.y);
+                console.log("My head is at " + head.x + "," + head.y);
+
+                // Now work out how to get there.
+                var dx = nf.x - head.x;
+                var dy = nf.y - head.y;
+
+                if (dx != 0) {
+                    if (dir == kb.DIR.UP || dir == kb.DIR.DOWN) {
+                        if (dx < 0) {
+                            newDir = kb.DIR.LEFT;
+                        } else {
+                            newDir = kb.DIR.RIGHT;
+                        }
+                    } else if (dir == kb.DIR.RIGHT) {
+                        if (dx > 0) {
+                            newDir = kb.DIR.RIGHT;
+                        } else {
+                            if (dy < 0) {
+                                newDir = kb.DIR.UP;
+                            } else {
+                                newDir = kb.DIR.DOWN;
+                            }
+                        }
+                    } else if (dir == kb.DIR.LEFT) {
+                        if (dx < 0) {
+                            newDir = kb.DIR.LEFT;
+                        } else {
+                            if (dy < 0) {
+                                newDir = kb.DIR.UP;
+                            } else {
+                                newDir = kb.DIR.DOWN;
+                            }
+                        }
+                    }
+                } else {
+                    if (dir == kb.DIR.UP) {
+                        if (dy < 0) {
+                            newDir = kb.DIR.UP;
+                        } else {
+                            newDir = kb.DIR.LEFT;
+                        }
+                    } else if (dir == kb.DIR.DOWN) {
+                        if (dy > 0) {
+                            newDir = kb.DIR.DOWN;
+                        } else {
+                            newDir = kb.DIR.RIGHT;
+                        }
+                    } else {
+                        if (dy < 0) {
+                            newDir = kb.DIR.UP;
+                        } else {
+                            newDir = kb.DIR.DOWN;
+                        }
+                    }
+                }
+
+                console.log("New direction is " + newDir);
+
+                return newDir;
+            }
+
+            function drawGame(gs) {
+                var screen = document.getElementById("screen").getContext('2d');
+
+                screen.fillStyle = '#ff6';
+                screen.fillRect(0, 0, 40*BLOCK_SIZE, 40*BLOCK_SIZE);
+
+                // Draw all the snakes
+                for (sid in gs.snakes) {
+                    if (sid == id) {
+                        screen.fillStyle = "blue";   // ME!
+                    } else {
+                        screen.fillStyle = "grey";   // THEM!
+                    }
+
+                    var snake = gs.snakes[sid];
+
+                    snake.body.forEach(function(block) {
+                        screen.fillRect(block.x * BLOCK_SIZE, block.y * BLOCK_SIZE, 10, 10);
+                    });
+                }
+
+                var food = gs.food;
+                if (food) {
+                    screen.fillStyle = "red";
+                    food.forEach(function(block) {
+                        screen.fillRect(block.x * BLOCK_SIZE, block.y * BLOCK_SIZE, 10, 10);
+                    });
+                }
+
+            }
+
+            function getRandomInt(min, max) {
+                min = Math.ceil(min);
+                max = Math.floor(max);
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+            function send(data) {
+                ws_socket.send(JSON.stringify(data));
+            }
+
+            function close() {
+                ws_socket.close();
+            }
+            function update(id, s) {
+                var data = {
+                    type: "updatesnake",
+                    id: id,
+                    s: s
+                };
+                send(data);
+            }
+            function addsnake() {
+                var data = {
+                    type: "addsnake"
+                }
+                send(data);
+            }
+            function startgame() {
+                var data = {
+                    type: "startgame"
+                }
+                send(data);
+            }
+        </script>
+    </head>
+
+    <body>
+        <h1>WS Client Test {{.Name}}</h1>
+        <canvas id="screen" width="400" height="400"></canvas>
+        <button id="start">Start</button>
+    </body>
+</html>

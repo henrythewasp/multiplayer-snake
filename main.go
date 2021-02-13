@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,19 @@ import (
 
 	"golang.org/x/net/websocket"
 )
+
+func httpHandler(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("ws1.htm")
+	if err != nil {
+		fmt.Println(err)
+	}
+	items := struct {
+		Name string
+	}{
+		Name: "Snake",
+	}
+	t.Execute(w, items)
+}
 
 func main() {
 	var options struct {
@@ -31,6 +45,7 @@ func main() {
 	update := make(chan ClientMessage)
 
 	// HTTP Request Handler
+	http.HandleFunc("/", httpHandler);
 
 	// WebSockets JSON Handler
 	wsJSONHandler := NewJSONHandler(update)
