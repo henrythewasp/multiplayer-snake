@@ -2,7 +2,7 @@
 <html>
     <head>
         <script>
-            var ws_socket = new WebSocket("ws://localhost:3000/json");
+            var ws_socket = new WebSocket("ws://{{.Address}}:{{.Port}}/json");
             // Get ID from URL param
             var url_string = window.location.href;
             var url = new URL(url_string);
@@ -12,20 +12,23 @@
             var isBot = (bot != null);
             console.log("isBot is (" + isBot +")");
 
+            var scoreEle = null;
 
             var BLOCK_SIZE = 10;
             var dir = 0;
 
-            if (!isBot) {
-                document.addEventListener("DOMContentLoaded", function(event) {
+            document.addEventListener("DOMContentLoaded", function(event) {
+                scoreEle = document.getElementById("score");
+
+                if (!isBot) {
                     var button = document.getElementById("start");
                     button.addEventListener('click', function(e) {
                         console.table(e);
                         startgame();
                         e.target.innerHTML = "Restart";
                     });
-                });
-            }
+                }
+            });
 
             var Keyboarder = function() {
                 var keyState = {};
@@ -82,7 +85,6 @@
 
                     if (p.payload.isrunning) {
                         s = p.payload.snakes[id];
-                        // console.table(s);
 
                         // Access snake
                         b = s.body;
@@ -93,6 +95,9 @@
                             return;
                         }
 
+                        // Update score
+                        scoreEle.innerHTML = "Score: " + b.length;
+                        
                         nh = { x: h.x, y: h.y };
 
                         if (isBot) {
@@ -271,7 +276,7 @@
     </head>
 
     <body>
-        <h1>WS Client Test {{.Name}}</h1>
+        <h1>WS Client Test {{.Name}} <span id="score"></span></h1>
         <canvas id="screen" width="400" height="400"></canvas>
         <button id="start">Start</button>
     </body>

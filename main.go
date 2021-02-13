@@ -12,6 +12,11 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+var Options struct {
+	address string
+	port    int
+}
+
 func httpHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("ws1.htm")
 	if err != nil {
@@ -19,25 +24,24 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	items := struct {
 		Name string
+		Address string
+		Port int
 	}{
 		Name: "Snake",
+		Address: Options.address,
+		Port: Options.port,
 	}
 	t.Execute(w, items)
 }
 
 func main() {
-	var options struct {
-		address string
-		port    int
-	}
-
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage:  %s [options]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
-	flag.StringVar(&options.address, "address", "localhost", "address to listen on")
-	flag.IntVar(&options.port, "port", 3000, "port to listen on")
+	flag.StringVar(&Options.address, "address", "localhost", "address to listen on")
+	flag.IntVar(&Options.port, "port", 3000, "port to listen on")
 	flag.Parse()
 
 	// Create ticker channel
@@ -115,7 +119,7 @@ func main() {
 	}(wsJSONHandler)
 
 
-	listenAt := fmt.Sprintf("%s:%d", options.address, options.port)
+	listenAt := fmt.Sprintf("%s:%d", Options.address, Options.port)
 	log.Printf("Starting to listen on: %s\n", listenAt)
 
 	if err := http.ListenAndServe(listenAt, nil); err != nil {
