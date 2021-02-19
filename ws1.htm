@@ -9,6 +9,7 @@ var isBot = ("{{.Bot}}" == "Y");
 console.log("isBot is (" + isBot +")");
 
 var scoreEle = null;
+var hasRemovedStart = false;
 
 var BLOCK_SIZE = 15;
 var dir = 0;
@@ -19,15 +20,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
     scoreEle = document.getElementById("score");
 
     var button = document.getElementById("start");
-    if (!isBot) {
-        button.addEventListener('click', function(e) {
-            console.table(e);
-            startgame();
-            e.target.style.display = 'none';
-        });
-    } else {
-        button.style.display = 'none';
-    }
+    button.addEventListener('click', function(e) {
+        console.table(e);
+        startgame();
+        e.target.style.display = 'none';
+        hasRemovedStart = true;
+    });
 });
 
 var Keyboarder = function() {
@@ -84,6 +82,13 @@ ws_socket.onmessage = function(event) {
         drawGame();
 
         if (GAMESTATE.isrunning) {
+            if (!hasRemovedStart) {
+                // Make sure start button is removed once games has commenced
+                var button = document.getElementById("start");
+                button.style.display = 'none';
+                hasRemovedStart = true;
+            }
+
             s = GAMESTATE.snakes[id];
 
             // Access snake

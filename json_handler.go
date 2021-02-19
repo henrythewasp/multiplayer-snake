@@ -13,7 +13,6 @@ type jsonHandler struct {
 	mutex sync.RWMutex
 	conns map[*websocket.Conn]struct{}
 	update chan ClientMessage
-	// gameState *GameState
 }
 
 type JSONWsMsg struct {
@@ -57,13 +56,10 @@ func (h *jsonHandler) echo(ws *websocket.Conn, payload interface{}) error {
 }
 
 func (h *jsonHandler) broadcast(payload interface{}) error {
-	// result := JSONBroadcastResult{Type: "broadcastResult", Payload: payload}
-
 	msg, err := json.Marshal(&JSONWsMsg{Type: "broadcast", Payload: payload})
 	if err != nil {
 		log.Println("broadcast json marshal err:", err)
 	} else {
-
 		h.mutex.RLock()
 
 		for c := range h.conns {
@@ -76,7 +72,6 @@ func (h *jsonHandler) broadcast(payload interface{}) error {
 	}
 
 	return err
-	// return websocket.JSON.Send(ws, &result)
 }
 
 func (h *jsonHandler) cleanup(ws *websocket.Conn) {

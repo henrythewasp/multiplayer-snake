@@ -45,7 +45,7 @@ func NewGameState() *GameState {
 
 	// Seed the rand package
 	tn := time.Now().UnixNano()
-	log.Println("UnixName: ", tn)
+	log.Println("UnixNano: ", tn)
 
 	rand.Seed(tn)
 
@@ -145,7 +145,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 				// Snake is DEAD.
 				isDead = true
 				fmt.Printf("(1) Snake is now dead: %+v\n", h)
-				fmt.Printf("(1) gs %+v\n", gs)
+				// fmt.Printf("(1) gs %+v\n", gs)
 				break
 			}
 		}
