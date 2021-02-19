@@ -26,10 +26,31 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 		Name string
 		Address string
 		Port int
+		Bot string
 	}{
-		Name: "Snake",
+		Name: "SlitherSquare",
 		Address: Options.address,
 		Port: Options.port,
+		Bot: "",
+	}
+	t.Execute(w, items)
+}
+
+func httpBotHandler(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("ws1.htm")
+	if err != nil {
+		fmt.Println(err)
+	}
+	items := struct {
+		Name string
+		Address string
+		Port int
+		Bot string
+	}{
+		Name: "SlitherSquare",
+		Address: Options.address,
+		Port: Options.port,
+		Bot: "Y",
 	}
 	t.Execute(w, items)
 }
@@ -44,12 +65,17 @@ func main() {
 	flag.IntVar(&Options.port, "port", 3000, "port to listen on")
 	flag.Parse()
 
+	// Read config file for settings XXX TODO XXX (JSON / TOML / YAML)
+
 	// Create ticker channel
 	ticker := time.NewTicker(100 * time.Millisecond)
 	update := make(chan ClientMessage)
 
 	// HTTP Request Handler
 	http.HandleFunc("/", httpHandler);
+
+	// HTTP Request Handler
+	http.HandleFunc("/bot", httpBotHandler);
 
 	// WebSockets JSON Handler
 	wsJSONHandler := NewJSONHandler(update)

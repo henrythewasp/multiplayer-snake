@@ -2,19 +2,17 @@
 <html>
     <head>
         <script>
+            var id = null;
             var ws_socket = new WebSocket("ws://{{.Address}}:{{.Port}}/json");
-            // Get ID from URL param
-            var url_string = window.location.href;
-            var url = new URL(url_string);
-            var bot = url.searchParams.get("bot");
+            var bot = "{{.Bot}}"
             console.log("Bot is (" + bot +")");
 
-            var isBot = (bot != null);
+            var isBot = (bot == "Y");
             console.log("isBot is (" + isBot +")");
 
             var scoreEle = null;
 
-            var BLOCK_SIZE = 10;
+            var BLOCK_SIZE = 15;
             var dir = 0;
 
             document.addEventListener("DOMContentLoaded", function(event) {
@@ -25,7 +23,7 @@
                     button.addEventListener('click', function(e) {
                         console.table(e);
                         startgame();
-                        e.target.innerHTML = "Restart";
+                        e.target.style.display = 'none';
                     });
                 }
             });
@@ -72,15 +70,14 @@
             ws_socket.onmessage = function(event) {
                 // console.log(event.data);
                 v = JSON.parse(event.data);
-                if (v.type == "echo") {
+                if (id == null && v.type == "echo") {
                     id = v.payload;
                     console.log("My Snake ID is: " + id);
 
-                } else if (v.type == "broadcast") {
+                } else if (id != null && v.type == "broadcast") {
                     p = JSON.parse(v.payload);
-                    // console.table(p.payload);
 
-                    console.log("Received broadcast payload from server")
+                    // console.log("Received broadcast payload from server")
                     drawGame(p.payload);
 
                     if (p.payload.isrunning) {
@@ -147,8 +144,8 @@
                     }
                 });
 
-                console.log("Nearest food is at " + nf.x + "," + nf.y);
-                console.log("My head is at " + head.x + "," + head.y);
+                // console.log("Nearest food is at " + nf.x + "," + nf.y);
+                // console.log("My head is at " + head.x + "," + head.y);
 
                 // Now work out how to get there.
                 var dx = nf.x - head.x;
@@ -212,21 +209,21 @@
             function drawGame(gs) {
                 var screen = document.getElementById("screen").getContext('2d');
 
-                screen.fillStyle = '#ff6';
+                screen.fillStyle = 'blue';
                 screen.fillRect(0, 0, 40*BLOCK_SIZE, 40*BLOCK_SIZE);
 
                 // Draw all the snakes
                 for (sid in gs.snakes) {
                     if (sid == id) {
-                        screen.fillStyle = "blue";   // ME!
+                        screen.fillStyle = "darkgreen";   // ME!
                     } else {
-                        screen.fillStyle = "grey";   // THEM!
+                        screen.fillStyle = "white";   // THEM!
                     }
 
                     var snake = gs.snakes[sid];
 
                     snake.body.forEach(function(block) {
-                        screen.fillRect(block.x * BLOCK_SIZE, block.y * BLOCK_SIZE, 10, 10);
+                        screen.fillRect(block.x * BLOCK_SIZE, block.y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
                     });
                 }
 
@@ -234,7 +231,7 @@
                 if (food) {
                     screen.fillStyle = "red";
                     food.forEach(function(block) {
-                        screen.fillRect(block.x * BLOCK_SIZE, block.y * BLOCK_SIZE, 10, 10);
+                        screen.fillRect(block.x * BLOCK_SIZE, block.y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
                     });
                 }
 
@@ -275,9 +272,9 @@
         </script>
     </head>
 
-    <body>
-        <h1>WS Client Test {{.Name}} <span id="score"></span></h1>
-        <canvas id="screen" width="400" height="400"></canvas>
+    <body bgcolor="lightgrey">
+        <h1>{{.Name}} <span id="score"></span></h1>
+        <canvas id="screen" width="600" height="600"></canvas>
         <button id="start">Start</button>
     </body>
 </html>

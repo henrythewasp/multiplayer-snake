@@ -94,7 +94,7 @@ func (gs *GameState) NewRandomFreePos(awayFromEdge bool) Pos {
 func NewRandomPos(awayFromEdge bool) Pos {
 	if awayFromEdge {
 		// Return a position that is not too near the edge
-		return Pos{rand.Intn(12)+4, rand.Intn(12)+4}
+		return Pos{rand.Intn(32)+4, rand.Intn(32)+4}
 	} else {
 		return Pos{rand.Intn(40), rand.Intn(40)}
 	}
@@ -234,8 +234,8 @@ func (gs *GameState) GetGameStateJSON() (string, error) {
 		log.Println("gamestate json marshal err:", err)
 	}
 
-	fmt.Printf("GetGameStateJSON: %+v\n", string(msg))
-	fmt.Printf("GetGameStateJSON: %+v\n", gs)
+	// fmt.Printf("GetGameStateJSON: %+v\n", string(msg))
+	// fmt.Printf("GetGameStateJSON: %+v\n", gs)
 
 	return string(msg), err
 }
