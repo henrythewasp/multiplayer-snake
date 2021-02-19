@@ -22,6 +22,7 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
+	// Prepare template actions
 	items := struct {
 		Name string
 		Address string
@@ -31,26 +32,7 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 		Name: "SlitherSquare",
 		Address: Options.address,
 		Port: Options.port,
-		Bot: "",
-	}
-	t.Execute(w, items)
-}
-
-func httpBotHandler(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("ws1.htm")
-	if err != nil {
-		fmt.Println(err)
-	}
-	items := struct {
-		Name string
-		Address string
-		Port int
-		Bot string
-	}{
-		Name: "SlitherSquare",
-		Address: Options.address,
-		Port: Options.port,
-		Bot: "Y",
+		Bot: r.URL.Query().Get("bot"),
 	}
 	t.Execute(w, items)
 }
@@ -73,9 +55,6 @@ func main() {
 
 	// HTTP Request Handler
 	http.HandleFunc("/", httpHandler);
-
-	// HTTP Request Handler
-	http.HandleFunc("/bot", httpBotHandler);
 
 	// WebSockets JSON Handler
 	wsJSONHandler := NewJSONHandler(update)
@@ -143,7 +122,6 @@ func main() {
 			}
 		}
 	}(wsJSONHandler)
-
 
 	listenAt := fmt.Sprintf("%s:%d", Options.address, Options.port)
 	log.Printf("Starting to listen on: %s\n", listenAt)
