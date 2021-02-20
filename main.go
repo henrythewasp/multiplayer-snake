@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -10,11 +9,40 @@ import (
 	"time"
 
 	"golang.org/x/net/websocket"
+	"gopkg.in/yaml.v2"
 )
 
-var Options struct {
-	address string
-	port    int
+var Config struct {
+	Server struct {
+		Port int `yaml:"port"`
+		Host string `yaml:"host"`
+	} `yaml:"server"`
+	Game struct {
+		Name string
+		Bot string
+		BoardSize int `yaml:"size"`
+		BoardColour string `yaml:"colour"`
+		BGColour string `yaml:"bgcolour"`
+		SnakeColour1 string `yaml:"snakecolour1"`
+		SnakeColour2 string `yaml:"snakecolour2"`
+		FoodColour string `yaml:"foodcolour"`
+	} `yaml:"game"`
+}
+
+func readConfigFile() {
+    f, err := os.Open("config.yml")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(2)
+	}
+	defer f.Close()
+
+    decoder := yaml.NewDecoder(f)
+    err = decoder.Decode(&Config)
+    if err != nil {
+		fmt.Println(err)
+		os.Exit(2)
+    }
 }
 
 func httpHandler(w http.ResponseWriter, r *http.Request) {
@@ -22,32 +50,17 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	// Prepare template actions
-	items := struct {
-		Name string
-		Address string
-		Port int
-		Bot string
-	}{
-		Name: "SlitherSquare",
-		Address: Options.address,
-		Port: Options.port,
-		Bot: r.URL.Query().Get("bot"),
-	}
-	t.Execute(w, items)
+	Config.Game.Name = "SlitherSquare"
+	Config.Game.Bot = r.URL.Query().Get("bot")
+
+	t.Execute(w, Config)
 }
 
 func main() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage:  %s [options]\n", os.Args[0])
-		flag.PrintDefaults()
-	}
-
-	flag.StringVar(&Options.address, "address", "localhost", "address to listen on")
-	flag.IntVar(&Options.port, "port", 3000, "port to listen on")
-	flag.Parse()
-
-	// Read config file for settings XXX TODO XXX (JSON / TOML / YAML)
+	readConfigFile()
+	fmt.Printf("%+v", Config)
 
 	// Create ticker channel
 	ticker := time.NewTicker(100 * time.Millisecond)
@@ -123,7 +136,7 @@ func main() {
 		}
 	}(wsJSONHandler)
 
-	listenAt := fmt.Sprintf("%s:%d", Options.address, Options.port)
+	listenAt := fmt.Sprintf("%s:%d", Config.Server.Host, Config.Server.Port)
 	log.Printf("Starting to listen on: %s\n", listenAt)
 
 	if err := http.ListenAndServe(listenAt, nil); err != nil {

@@ -1,0 +1,13 @@
+# Server configurations
+server:
+  host: "localhost"
+  port: 3000
+
+# Game config
+game:
+  size: 40
+  colour: "blue"
+  bgcolour: "lightblue"
+  snakecolour1: "green"
+  snakecolour2: "white"
+  foodcolour: "red"

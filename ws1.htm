@@ -3,9 +3,9 @@
 <head>
 <script>
 var id = null;
-var ws_socket = new WebSocket("ws://{{.Address}}:{{.Port}}/json");
+var ws_socket = new WebSocket("ws://{{.Server.Host}}:{{.Server.Port}}/json");
 
-var isBot = ("{{.Bot}}" == "Y");
+var isBot = ("{{.Game.Bot}}" == "Y");
 console.log("isBot is (" + isBot +")");
 
 var scoreEle = null;
@@ -303,7 +303,7 @@ function startgame() {
 </head>
 
 <body bgcolor="lightgrey">
-    <h1>{{.Name}} <span id="score"></span></h1>
+    <h1>{{.Game.Name}} <span id="score"></span></h1>
     <canvas id="screen" width="600" height="600"></canvas>
     <button id="start">Start</button>
 </body>
