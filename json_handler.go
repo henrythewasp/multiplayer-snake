@@ -74,6 +74,12 @@ func (h *jsonHandler) broadcast(payload interface{}) error {
 	return err
 }
 
+func (h *jsonHandler) cleanupAll() {
+	log.Println("cleanup all WS connections")
+	for c := range h.conns {
+		h.cleanup(c)
+	}
+}
 func (h *jsonHandler) cleanup(ws *websocket.Conn) {
 	ws.Close()
 	h.mutex.Lock()

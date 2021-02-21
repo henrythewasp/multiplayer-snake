@@ -5,9 +5,10 @@ server:
 
 # Game config
 game:
-  size: 40
-  colour: "blue"
-  bgcolour: "lightblue"
-  snakecolour1: "green"
+  canvassize: 600
+  boardsize: 40
+  boardcolour: "lightblue"
+  bgcolour: "lightgrey"
+  snakecolour1: "darkgreen"
   snakecolour2: "white"
   foodcolour: "red"

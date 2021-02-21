@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var Config struct {
+type GameConfig struct {
 	Server struct {
 		Port int `yaml:"port"`
 		Host string `yaml:"host"`
@@ -20,14 +20,17 @@ var Config struct {
 	Game struct {
 		Name string
 		Bot string
-		BoardSize int `yaml:"size"`
-		BoardColour string `yaml:"colour"`
+		CanvasSize int `yaml:"canvassize"`
+		BoardSize int `yaml:"boardsize"`
+		BoardColour string `yaml:"boardcolour"`
 		BGColour string `yaml:"bgcolour"`
 		SnakeColour1 string `yaml:"snakecolour1"`
 		SnakeColour2 string `yaml:"snakecolour2"`
 		FoodColour string `yaml:"foodcolour"`
 	} `yaml:"game"`
 }
+
+var Cfg GameConfig
 
 func readConfigFile() {
     f, err := os.Open("config.yml")
@@ -38,7 +41,7 @@ func readConfigFile() {
 	defer f.Close()
 
     decoder := yaml.NewDecoder(f)
-    err = decoder.Decode(&Config)
+    err = decoder.Decode(&Cfg)
     if err != nil {
 		fmt.Println(err)
 		os.Exit(2)
@@ -52,15 +55,15 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Prepare template actions
-	Config.Game.Name = "SlitherSquare"
-	Config.Game.Bot = r.URL.Query().Get("bot")
+	Cfg.Game.Name = "SlitherSquare"
+	Cfg.Game.Bot = r.URL.Query().Get("bot")
 
-	t.Execute(w, Config)
+	t.Execute(w, Cfg)
 }
 
 func main() {
 	readConfigFile()
-	fmt.Printf("%+v", Config)
+	fmt.Printf("%+v", Cfg)
 
 	// Create ticker channel
 	ticker := time.NewTicker(100 * time.Millisecond)
@@ -77,7 +80,7 @@ func main() {
 
 	// Create gameloop goroutine
 	go func(h *jsonHandler) {
-		gs := NewGameState()
+		gs := NewGameState(&Cfg)
 
 		for {
 			select {
@@ -117,6 +120,11 @@ func main() {
 					if gs.IsRunning {
 						log.Println("updateSnake MSG")
 						gs.UpdateSnake(msg)
+
+						if !gs.IsRunning {
+							// Game has stopped. Reset json_handler
+							h.cleanupAll()
+						}
 					}
 
 				default:
@@ -136,7 +144,7 @@ func main() {
 		}
 	}(wsJSONHandler)
 
-	listenAt := fmt.Sprintf("%s:%d", Config.Server.Host, Config.Server.Port)
+	listenAt := fmt.Sprintf("%s:%d", Cfg.Server.Host, Cfg.Server.Port)
 	log.Printf("Starting to listen on: %s\n", listenAt)
 
 	if err := http.ListenAndServe(listenAt, nil); err != nil {

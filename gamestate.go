@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -35,12 +34,13 @@ type JSONSnakeData struct {
 }
 type GameState struct {
 	mutex sync.RWMutex
+	config *GameConfig
 	IsRunning bool 				`json:"isrunning"`
 	Snakes map[string]Snake 	`json:"snakes"`
 	Food []Pos					`json:"food"`
 }
 
-func NewGameState() *GameState {
+func NewGameState(cfg *GameConfig) *GameState {
 	log.Println("Building new GameState")
 
 	// Seed the rand package
@@ -50,9 +50,16 @@ func NewGameState() *GameState {
 	rand.Seed(tn)
 
 	return &GameState{
+		config: cfg,
 		IsRunning: false,
 		Snakes: make(map[string]Snake),
 	}
+}
+func (gs *GameState) CleanUp() {
+	log.Println("Game finished. Cleaning up")
+	gs.IsRunning = false
+	gs.Snakes = make(map[string]Snake)
+	gs.Food = gs.Food[:0]
 }
 func (gs *GameState) StartGame() {
 	log.Println("Starting Game")
@@ -82,7 +89,7 @@ func (gs *GameState) NewSnake() Snake {
 func (gs *GameState) NewRandomFreePos(awayFromEdge bool) Pos {
 	var p Pos
 	for {
-		p = NewRandomPos(awayFromEdge)
+		p = NewRandomPos(awayFromEdge, gs.config.Game.BoardSize)
 		if 	!gs.IsPosOccupied(p) &&
 			!gs.IsPosOccupied(Pos{p.X, p.Y+1}) {
 			break
@@ -91,12 +98,14 @@ func (gs *GameState) NewRandomFreePos(awayFromEdge bool) Pos {
 	}
 	return p
 }
-func NewRandomPos(awayFromEdge bool) Pos {
+func NewRandomPos(awayFromEdge bool, boardSize int) Pos {
 	if awayFromEdge {
 		// Return a position that is not too near the edge
-		return Pos{rand.Intn(32)+4, rand.Intn(32)+4}
+		area := boardSize / 2
+		border := boardSize / 4
+		return Pos{rand.Intn(area)+border, rand.Intn(area)+border}
 	} else {
-		return Pos{rand.Intn(40), rand.Intn(40)}
+		return Pos{rand.Intn(boardSize), rand.Intn(boardSize)}
 	}
 }
 
@@ -116,6 +125,8 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 	s := msg.S
 	h := s.Body[0]
 
+	b := gs.config.Game.BoardSize
+
 	isDead := (s.State == Dead)
 	if isDead {
 		log.Println("ERROR! Snake is already dead 8X")
@@ -126,7 +137,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 
 	if !isDead {
 		// Check if any bounds are exceeded by head
-		if h.X < 0 || h.X > 40 || h.Y < 0 || h.Y > 40 {
+		if h.X < 0 || h.X > b || h.Y < 0 || h.Y > b {
 			// Snake is DEAD
 			fmt.Printf("(0) Snake is now dead: %+v\n", h)
 			isDead = true
@@ -181,8 +192,9 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 		}
 
 		if stopGame {
-			// XXX TODO need to stop game rather than just exit
-			os.Exit(1)
+			// Stop game rather
+			gs.CleanUp()
+			// os.Exit(1)
 		}
 	}
 }
