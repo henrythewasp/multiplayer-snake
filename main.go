@@ -77,7 +77,6 @@ func main() {
 	wsJSONServer := websocket.Server{Handler: wsJSONHandler.Accept}
 	http.Handle("/json", wsJSONServer)
 
-
 	// Create gameloop goroutine
 	go func(h *jsonHandler) {
 		gs := NewGameState(&Cfg)
@@ -122,7 +121,7 @@ func main() {
 						gs.UpdateSnake(msg)
 
 						if !gs.IsRunning {
-							// Game has stopped. Reset json_handler
+							// Game has stopped.  Cleanup WS connections.
 							h.cleanupAll()
 						}
 					}

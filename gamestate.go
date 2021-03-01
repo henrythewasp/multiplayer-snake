@@ -27,11 +27,6 @@ type Snake struct {
 	State SnakeState 	`json:"state"`
 }
 
-// Is ths struct required? XXX
-type JSONSnakeData struct {
-	Id string	`json:"id"`
-	S Snake		`json:"s"`
-}
 type GameState struct {
 	mutex sync.RWMutex
 	config *GameConfig
@@ -77,15 +72,16 @@ func (gs *GameState) NewSnake() Snake {
 	log.Println("Building new Snake")
 	b := make([]Pos, 0, 10)
 	p := gs.NewRandomFreePos(true)
+
+	// Create a 2-part snake initially. Head + 1 body.
 	b = append(b, p)
 	b = append(b, Pos{p.X, p.Y+1})
+
 	return Snake{
 		Body: b,
 		State: Pending,
 	}
 }
-// will also need to check that this is a feee point on the grid and isn't
-// already taken up by a snake or food.
 func (gs *GameState) NewRandomFreePos(awayFromEdge bool) Pos {
 	var p Pos
 	for {
@@ -109,9 +105,13 @@ func NewRandomPos(awayFromEdge bool, boardSize int) Pos {
 	}
 }
 
-type JSONGameStateMsg struct {
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
+func (gs *GameState) GetGameStateJSON() (string, error) {
+	msg, err := json.Marshal(&GameStateMessage{Type: "gamestate", Payload: gs})
+	if err != nil {
+		log.Println("gamestate json marshal err:", err)
+	}
+
+	return string(msg), err
 }
 
 func (gs *GameState) AddSnake(msg ClientMessage) string {
@@ -121,6 +121,7 @@ func (gs *GameState) AddSnake(msg ClientMessage) string {
 	gs.mutex.Unlock()
 	return id
 }
+
 func (gs *GameState) UpdateSnake(msg ClientMessage) {
 	s := msg.S
 	h := s.Body[0]
@@ -156,7 +157,6 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 				// Snake is DEAD.
 				isDead = true
 				fmt.Printf("(1) Snake is now dead: %+v\n", h)
-				// fmt.Printf("(1) gs %+v\n", gs)
 				break
 			}
 		}
@@ -167,7 +167,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 			// Remove the LAST element (moving, not growing)
 			s.Body = s.Body[:len(s.Body)-1]
 		} else {
-			// Remove the food and place a new one
+			// Remove the food and place a new one somewhere on the board
 			gs.Food = RemovePosFromSlice(h, gs.Food)
 			gs.Food = append(gs.Food, gs.NewRandomFreePos(false))
 		}
@@ -183,7 +183,7 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 
 	if (isDead) {
 		stopGame := true
-		// If there are no snakes left alive, stop the game.
+		// If there are no snakes left alive, end the game.
 		for _, v := range gs.Snakes {
 			if v.State != Dead {
 				stopGame = false
@@ -192,15 +192,14 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 		}
 
 		if stopGame {
-			// Stop game rather
+			// Tidy up the gamestate
 			gs.CleanUp()
-			// os.Exit(1)
 		}
 	}
 }
 
 // Need func to test if pos is food, if pos is occupied by another snake
-// (except THIS sname's head)
+// (except THIS snake's head)
 func (gs *GameState) IsPosOccupied(p Pos) bool {
 	if gs.IsPosFood(p) {
 		return true
@@ -239,15 +238,3 @@ func IsEqualPos(p1 Pos, p2 Pos) bool {
 	return (p1.X == p2.X && p1.Y == p2.Y)
 }
 
-// This function needs fixing. It's not marshalling the payload properly.
-func (gs *GameState) GetGameStateJSON() (string, error) {
-	msg, err := json.Marshal(&JSONGameStateMsg{Type: "gamestate", Payload: gs})
-	if err != nil {
-		log.Println("gamestate json marshal err:", err)
-	}
-
-	// fmt.Printf("GetGameStateJSON: %+v\n", string(msg))
-	// fmt.Printf("GetGameStateJSON: %+v\n", gs)
-
-	return string(msg), err
-}
