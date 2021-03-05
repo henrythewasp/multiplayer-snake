@@ -21,9 +21,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
     scoreEle = document.getElementById("score");
 
     var button = document.getElementById("start");
-    button.addEventListener('click', function(e) {
+    button.addEventListener("click", function(e) {
         startgame();
-        e.target.style.display = 'none';
+        e.target.style.display = "none";
         hasRemovedStart = true;
     });
 });
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 var Keyboarder = function() {
     var keyState = {};
 
-    window.addEventListener('keydown', function(e) {
+    window.addEventListener("keydown", function(e) {
         keyState[e.keyCode] = true;
 
         // Keyboard direction control but not allowed to reverse into yourself
@@ -46,7 +46,7 @@ var Keyboarder = function() {
         }
     });
 
-    window.addEventListener('keyup', function(e) {
+    window.addEventListener("keyup", function(e) {
         keyState[e.keyCode] = false;
     });
 
@@ -65,13 +65,13 @@ ws_socket.onopen = function(event) {
 };
 ws_socket.onmessage = function(event) {
     // console.log(event.data);
-    v = JSON.parse(event.data);
+    var v = JSON.parse(event.data);
     if (id == null && v.type == "echo") {
         id = v.payload;
         console.log("My Snake ID is: " + id);
 
     } else if (id != null && v.type == "broadcast") {
-        p = JSON.parse(v.payload);
+        var p = JSON.parse(v.payload);
 
         // console.log("Received broadcast payload from server")
         GAMESTATE = p.payload;
@@ -81,20 +81,20 @@ ws_socket.onmessage = function(event) {
             if (!hasRemovedStart) {
                 // Make sure start button is removed once games has commenced
                 var button = document.getElementById("start");
-                button.style.display = 'none';
+                button.style.display = "none";
                 hasRemovedStart = true;
             }
 
-            s = GAMESTATE.snakes[id];
+            var s = GAMESTATE.snakes[id];
 
             // Access snake
-            b = s.body;
-            h = b[0];
-            d = s.state;
-            if (d == 2) {
-                console.log("This snake is DEAD!")
+            if (s.state == 2) {
+                console.log("This snake is DEAD!");
                 return;
             }
+
+            var b = s.body;
+            var h = b[0];
 
             // Update score
             scoreEle.innerHTML = "Score: " + b.length;
@@ -104,7 +104,7 @@ ws_socket.onmessage = function(event) {
                 dir = getBotMove(h, dir, p.payload.food);
             }
 
-            nh = getNewHead(h, dir);
+            var nh = getNewHead(h, dir);
 
             b.unshift(nh);
             s.body = b;
@@ -116,7 +116,7 @@ ws_socket.onmessage = function(event) {
 };
 
 function getNewHead(head, dir) {
-    nh = { x: head.x, y: head.y };
+    var nh = { x: head.x, y: head.y };
     // Allow wrap when you go over the edge
     if (dir == kb.DIR.UP) {
         nh.y = wrapMove(nh.y-1);
@@ -190,8 +190,9 @@ function getBotMove(head, dir, food) {
 
 function checkNewDir(head, dir, newDir) {
     // Check where new head is going to be.
-    nh = getNewHead(head, newDir);
-    count = 4;
+    var nh = getNewHead(head, newDir);
+    var count = 4;
+    var change = 0;
 
     while (!isClear(nh) && count--) {
         // New head is already taken.  Change direction (+- 90 degrees)
@@ -204,7 +205,7 @@ function checkNewDir(head, dir, newDir) {
 
 function isClear(pos) {
     // Check if pos is currently unoccupied
-    for (sid in GAMESTATE.snakes) {
+    for (var sid in GAMESTATE.snakes) {
         if (!GAMESTATE.snakes[sid].body.every( block => (block.x != pos.x || block.y != pos.y) )) {
             return false;
         }
@@ -213,15 +214,15 @@ function isClear(pos) {
 }
 
 function drawGame() {
-    var screen = document.getElementById("screen").getContext('2d');
+    var screen = document.getElementById("screen").getContext("2d");
 
     // Draw the board background over the top of everything
-    screen.fillStyle = '{{.Game.BoardColour}}';
+    screen.fillStyle = "{{.Game.BoardColour}}";
     screen.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     // Draw all the snakes
-    for (sid in GAMESTATE.snakes) {
-        snakeColour = (sid == id) ? "{{.Game.SnakeColour1}}" : "{{.Game.SnakeColour2}}";
+    for (var sid in GAMESTATE.snakes) {
+        var snakeColour = (sid == id) ? "{{.Game.SnakeColour1}}" : "{{.Game.SnakeColour2}}";
         GAMESTATE.snakes[sid].body.forEach(function(block, i) {
             screen.fillStyle = (i == 0) ? "black" : snakeColour;
             screen.fillRect(block.x * BLOCK_SIZE, block.y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -238,17 +239,8 @@ function drawGame() {
 
 }
 
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 function send(data) {
     ws_socket.send(JSON.stringify(data));
-}
-
-function close() {
-    ws_socket.close();
 }
 function update(id, s) {
     var data = {
@@ -261,13 +253,13 @@ function update(id, s) {
 function addsnake() {
     var data = {
         type: "addsnake"
-    }
+    };
     send(data);
 }
 function startgame() {
     var data = {
         type: "startgame"
-    }
+    };
     send(data);
 }
 </script>
