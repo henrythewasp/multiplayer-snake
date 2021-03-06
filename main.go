@@ -121,7 +121,19 @@ func main() {
 						gs.UpdateSnake(msg)
 
 						if !gs.IsRunning {
-							// Game has stopped.  Cleanup WS connections.
+							log.Println(">>> Game ended. Notify clients and clean up")
+
+							// Game has stopped. Notify all clients
+							if data, err := gs.GetGameStateJSON(); err != nil {
+								log.Println("GetGameStateJSON err:", err)
+							} else if err = h.broadcast(data); err != nil {
+								log.Println("broadcast err:", err)
+							}
+
+							// Clean-up game state
+							gs.CleanUp()
+
+							// Clean-up WS connections.
 							h.cleanupAll()
 						}
 					}

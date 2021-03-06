@@ -111,6 +111,12 @@ ws_socket.onmessage = function(event) {
 
             // Send new position to server
             update(id, s);
+
+        } else if (hasRemovedStart) {
+            // Game was started and now it has ended.  Update status and show "reload" link
+            alert("Game has ended.  Reload to start a new game!");
+
+            // TODO, work out if this snake ID has won (calc score of all snakes)
         }
     }
 };

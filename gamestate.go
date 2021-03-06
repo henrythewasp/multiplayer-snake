@@ -192,8 +192,8 @@ func (gs *GameState) UpdateSnake(msg ClientMessage) {
 		}
 
 		if stopGame {
-			// Tidy up the gamestate
-			gs.CleanUp()
+			log.Println("Game finished.")
+			gs.IsRunning = false
 		}
 	}
 }
