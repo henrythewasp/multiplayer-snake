@@ -117,7 +117,7 @@ func main() {
 				case "updatesnake":
 					// Game must be running.
 					if gs.IsRunning {
-						log.Println("updateSnake MSG")
+						// log.Println("updateSnake MSG")
 						gs.UpdateSnake(msg)
 
 						if !gs.IsRunning {
@@ -141,10 +141,10 @@ func main() {
 				default:
 					log.Println("unknown msg.Type")
 				}
-			case t := <-ticker.C:
+			case <-ticker.C:
 				if gs.IsRunning {
 					// Send out gamestate to all clients
-					fmt.Println("Tick at", t)
+					// fmt.Println("Tick at", t)
 					if data, err := gs.GetGameStateJSON(); err != nil {
 						log.Println("GetGameStateJSON err:", err)
 					} else if err = h.broadcast(data); err != nil {

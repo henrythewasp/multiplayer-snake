@@ -5,7 +5,7 @@ server:
 
 # Game config
 game:
-  canvassize: 600
+  canvassize: 520
   boardsize: 40
   boardcolour: "lightblue"
   bgcolour: "lightgrey"

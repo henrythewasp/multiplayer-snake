@@ -45,7 +45,7 @@ func (h *jsonHandler) Accept(ws *websocket.Conn) {
 
 		msg.ws = ws   // Save websocket for this msg in case we need to reply
 
-		log.Println(msg)
+		// log.Println(msg)
 
 		h.update <- msg
 	}
