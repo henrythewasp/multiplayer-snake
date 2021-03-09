@@ -4,8 +4,9 @@ server:
   port: 3000
 
 # Game config
+# 450 is good width for mobile
 game:
-  canvassize: 520
+  canvassize: 450
   boardsize: 40
   boardcolour: "lightblue"
   bgcolour: "lightgrey"
